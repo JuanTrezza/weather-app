@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WeatherWorld — Clima Global</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- FONDO ESPACIAL CON ESTRELLAS -->
+  <div id="estrellas"></div>
+
+  <!-- PANTALLA DE BÚSQUEDA (con el globo) -->
+  <div class="pantalla" id="pantalla-busqueda">
+
+    <div class="busqueda-content">
+      <h1 class="titulo">Weather<span>World</span></h1>
+      <p class="subtitulo">Explorá el clima de cualquier lugar del planeta</p>
+
+      <!-- GLOBO TERRÁQUEO -->
+      <div class="globo-wrap">
+        <div class="atmosfera"></div>
+        <div class="globo">
+          <div class="superficie"></div>
+        </div>
+        <div class="sombra-globo"></div>
+      </div>
+
+      <!-- BUSCADOR -->
+      <div class="buscador-wrap">
+        <div class="input-wrap">
+          <span class="icono-buscar">🔍</span>
+          <input 
+            type="text" 
+            id="input-ciudad" 
+            placeholder="Buscá una ciudad..."
+            autocomplete="off"
+          >
+          <button id="btn-geolocalizacion" title="Usar mi ubicación">📍</button>
+        </div>
+        <button id="btn-buscar">Ver clima</button>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div id="historial-wrap">
+        <span class="historial-label">Recientes:</span>
+        <div id="historial"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PANTALLA DE RESULTADO -->
+  <div class="pantalla oculto" id="pantalla-clima">
+
+    <button id="btn-volver">← Volver</button>
+
+    <div class="clima-content">
+
+      <!-- CABECERA -->
+      <div class="clima-header">
+        <div class="ciudad-info">
+          <h2 id="ciudad-nombre"></h2>
+          <p id="ciudad-pais"></p>
+        </div>
+        <div class="fecha-hora" id="fecha-hora"></div>
+      </div>
+
+      <!-- CLIMA PRINCIPAL -->
+      <div class="clima-principal">
+        <div class="temp-wrap">
+          <span id="icono-clima"></span>
+          <span id="temperatura"></span>
+        </div>
+        <p id="descripcion"></p>
+        <p id="sensacion"></p>
+      </div>
+
+      <!-- DETALLES -->
+      <div class="detalles-grid">
+        <div class="detalle-card">
+          <span class="detalle-icono">💧</span>
+          <span class="detalle-valor" id="humedad"></span>
+          <span class="detalle-label">Humedad</span>
+        </div>
+        <div class="detalle-card">
+          <span class="detalle-icono">💨</span>
+          <span class="detalle-valor" id="viento"></span>
+          <span class="detalle-label">Viento</span>
+        </div>
+        <div class="detalle-card">
+          <span class="detalle-icono">👁️</span>
+          <span class="detalle-valor" id="visibilidad"></span>
+          <span class="detalle-label">Visibilidad</span>
+        </div>
+        <div class="detalle-card">
+          <span class="detalle-icono">🌡️</span>
+          <span class="detalle-valor" id="presion"></span>
+          <span class="detalle-label">Presión</span>
+        </div>
+      </div>
+
+      <!-- PRONÓSTICO 5 DÍAS -->
+      <div class="pronostico-wrap">
+        <h3>Próximos 5 días</h3>
+        <div id="pronostico"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="oculto" id="loading">
+    <div class="spinner"></div>
+    <p>Buscando clima...</p>
+  </div>
+
+  <!-- ERROR -->
+  <div class="oculto" id="error-msg">
+    <span>❌</span>
+    <p id="error-texto"></p>
+    <button id="btn-cerrar-error">Cerrar</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

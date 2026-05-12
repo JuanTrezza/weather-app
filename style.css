@@ -1,0 +1,665 @@
+/* ================================
+   VARIABLES Y RESET
+   ================================ */
+:root {
+  --espacio: #030614;
+  --espacio-mid: #0a0f2e;
+  --azul-atmos: #4fc3f7;
+  --azul-oceano: #1565c0;
+  --verde-tierra: #2e7d32;
+  --blanco: #ffffff;
+  --texto-suave: rgba(255,255,255,0.6);
+  --card-bg: rgba(255,255,255,0.07);
+  --card-border: rgba(255,255,255,0.12);
+  --radio: 16px;
+
+  /* Colores por clima — los cambia JavaScript */
+  --bg-top: #030614;
+  --bg-bottom: #0a0f2e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+  color: var(--blanco);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 1.5s ease;
+}
+
+/* ================================
+   ESTRELLAS
+   ================================ */
+
+/* El div de estrellas ocupa toda la pantalla detrás de todo */
+#estrellas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none; /* no interfiere con clicks */
+}
+
+/* Cada estrella es un span creado por JavaScript */
+.estrella {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: titilar var(--duracion) ease-in-out infinite alternate;
+}
+
+@keyframes titilar {
+  from { opacity: 0.2; transform: scale(1); }
+  to   { opacity: 1;   transform: scale(1.4); }
+}
+
+/* ================================
+   SISTEMA DE PANTALLAS
+   ================================ */
+.pantalla {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 24px 20px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.oculto { display: none !important; }
+
+/* ================================
+   PANTALLA DE BÚSQUEDA
+   ================================ */
+.busqueda-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+}
+
+.titulo {
+  font-family: 'Syne', sans-serif;
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+}
+
+/* La palabra "World" en azul */
+.titulo span {
+  color: var(--azul-atmos);
+}
+
+.subtitulo {
+  color: var(--texto-suave);
+  margin-bottom: 40px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* ================================
+   GLOBO TERRÁQUEO
+   ================================ */
+.globo-wrap {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin-bottom: 48px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.globo-wrap:hover {
+  transform: scale(1.04);
+}
+
+/* Halo atmosférico */
+.atmosfera {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 48%,
+    rgba(100, 200, 255, 0.08) 58%,
+    rgba(79, 195, 247, 0.22) 70%,
+    rgba(79, 195, 247, 0.12) 82%,
+    transparent 100%
+  );
+  animation: pulsar-atmos 5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes pulsar-atmos {
+  from { opacity: 0.6; transform: scale(1); }
+  to   { opacity: 1;   transform: scale(1.02); }
+}
+
+/* Anillo exterior sutil */
+.atmosfera::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(79, 195, 247, 0.15);
+}
+
+/* La esfera */
+.globo {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    inset -50px -30px 90px rgba(0, 0, 0, 0.85),
+    inset 15px 10px 40px rgba(255, 255, 255, 0.04),
+    0 0 80px rgba(79, 195, 247, 0.18),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Brillo especular — reflejo de luz */
+.globo::after {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: 12%;
+  width: 35%;
+  height: 28%;
+  background: radial-gradient(
+    ellipse,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+  transform: rotate(-20deg);
+}
+
+/* La superficie que gira */
+.superficie {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  animation: rotar-tierra 25s linear infinite;
+  transform-origin: left center;
+  background-image: url('tierra.jpg');
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+}
+
+
+@keyframes rotar-tierra {
+  from { transform: translateX(0%); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Sombra debajo del globo */
+.sombra-globo {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 24px;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.2) 50%,
+    transparent 70%
+  );
+  filter: blur(4px);
+}
+
+/* ================================
+   BUSCADOR
+   ================================ */
+.buscador-wrap {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radio);
+  padding: 0 16px;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s;
+}
+
+.input-wrap:focus-within {
+  border-color: var(--azul-atmos);
+}
+
+.icono-buscar {
+  font-size: 1rem;
+  margin-right: 10px;
+  opacity: 0.6;
+}
+
+#input-ciudad {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--blanco);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  padding: 16px 0;
+}
+
+#input-ciudad::placeholder {
+  color: var(--texto-suave);
+}
+
+#btn-geolocalizacion {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+#btn-geolocalizacion:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+#btn-buscar {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #1565c0, #4fc3f7);
+  border: none;
+  border-radius: var(--radio);
+  color: white;
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+#btn-buscar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(79, 195, 247, 0.4);
+}
+
+/* ================================
+   HISTORIAL
+   ================================ */
+#historial-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 480px;
+}
+
+.historial-label {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.btn-historial {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  color: var(--blanco);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.btn-historial:hover {
+  border-color: var(--azul-atmos);
+  background: rgba(79, 195, 247, 0.1);
+}
+
+/* ================================
+   PANTALLA DE CLIMA
+   ================================ */
+#btn-volver {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 8px 18px;
+  color: var(--blanco);
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+#btn-volver:hover {
+  border-color: var(--azul-atmos);
+}
+
+.clima-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+#ciudad-nombre {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+#ciudad-pais {
+  color: var(--texto-suave);
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.fecha-hora {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+/* Temperatura y descripción */
+.clima-principal {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.temp-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+#icono-clima {
+  font-size: 5rem;
+  filter: drop-shadow(0 0 20px rgba(255,255,255,0.3));
+}
+
+#temperatura {
+  font-family: 'Syne', sans-serif;
+  font-size: 6rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff, var(--azul-atmos));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#descripcion {
+  font-size: 1.3rem;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+  white-space: nowrap;     /* no corta en varias líneas */
+  overflow: hidden;        /* oculta lo que sobra */
+  text-overflow: ellipsis; /* pone "..." si es muy largo */
+  max-width: 100%;
+}
+
+#descripcion {
+  font-size: 1.2rem;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.3;
+}
+
+#sensacion {
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+/* Grid de detalles */
+.detalles-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.detalle-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radio);
+  padding: 16px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  backdrop-filter: blur(10px);
+}
+
+.detalle-icono { font-size: 1.4rem; }
+
+.detalle-valor {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.detalle-label {
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+}
+
+/* Pronóstico */
+.pronostico-wrap h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#pronostico {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.dia-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radio);
+  padding: 16px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s;
+}
+
+.dia-card:hover {
+  border-color: var(--azul-atmos);
+}
+
+.dia-nombre {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dia-icono { font-size: 1.8rem; }
+
+.dia-temp-max {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.dia-temp-min {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+/* ================================
+   LOADING
+   ================================ */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 6, 20, 0.85);
+  backdrop-filter: blur(8px);
+  gap: 16px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(79, 195, 247, 0.2);
+  border-top-color: var(--azul-atmos);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* ================================
+   ERROR
+   ================================ */
+#error-msg {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(183, 28, 28, 0.9);
+  border: 1px solid rgba(255,100,100,0.3);
+  border-radius: var(--radio);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+  min-width: 300px;
+  animation: aparecer 0.3s ease;
+}
+
+#error-msg p { flex: 1; font-size: 0.95rem; }
+
+#btn-cerrar-error {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  color: white;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ================================
+   TEMAS POR CLIMA
+   ================================ */
+
+/* JavaScript agrega estas clases al body según el clima */
+
+body.tema-sol {
+  --bg-top: #e65100;
+  --bg-bottom: #f57c00;
+}
+
+body.tema-nublado {
+  --bg-top: #263238;
+  --bg-bottom: #37474f;
+}
+
+body.tema-lluvia {
+  --bg-top: #0d1b2a;
+  --bg-bottom: #1b3a5c;
+}
+
+body.tema-tormenta {
+  --bg-top: #1a0533;
+  --bg-bottom: #2d1b69;
+}
+
+body.tema-nieve {
+  --bg-top: #e0f2f1;
+  --bg-bottom: #b2dfdb;
+}
+
+body.tema-noche {
+  --bg-top: #000005;
+  --bg-bottom: #0a0a1a;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+@media (max-width: 480px) {
+  .titulo { font-size: 2.2rem; }
+  .globo-wrap { width: 200px; height: 200px; }
+  .globo { width: 200px; height: 200px; }
+  #temperatura { font-size: 4.5rem; }
+  .detalles-grid { grid-template-columns: repeat(2, 1fr); }
+  #pronostico { grid-template-columns: repeat(3, 1fr); }
+  .clima-header { flex-direction: column; gap: 8px; }
+
+
+.globo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 32% 32%,
+    transparent 35%,
+    rgba(0, 0, 0, 0.15) 60%,
+    rgba(0, 0, 0, 0.55) 80%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+.pantalla {
+  padding-bottom: 48px;
+}
+}

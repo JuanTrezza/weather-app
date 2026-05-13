@@ -43,6 +43,15 @@ const pronosticoDiv  = document.getElementById('pronostico');
 
 let historial = JSON.parse(localStorage.getItem('weatherHistorial')) || [];
 
+// Estado extra
+let abortController    = null;
+const climaCache       = new Map(); // clave → { current, forecast, ts }
+const CACHE_TTL        = 10 * 60 * 1000; // 10 min en ms
+let errorTimeout       = null;
+let currentWeatherData  = null;
+let currentForecastData = null;
+let esCelsius           = true;
+
 // ================================
 // ESTRELLAS
 // ================================
@@ -87,12 +96,13 @@ function guardarHistorial(ciudad) {
 }
 
 function renderizarHistorial() {
+  historialWrap.style.display = 'flex';
+
   if (historial.length === 0) {
-    historialWrap.style.display = 'none';
+    historialDiv.innerHTML = '<span class="historial-vacio">Sin búsquedas recientes</span>';
     return;
   }
 
-  historialWrap.style.display = 'flex';
   historialDiv.innerHTML = historial.map(ciudad => `
     <button class="btn-historial" data-ciudad="${ciudad}">
       📍 ${ciudad}
@@ -112,14 +122,27 @@ function renderizarHistorial() {
 // ================================
 
 async function buscarClima(ciudad) {
+  // Cancelar petición anterior si aún está en vuelo
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+  const signal = abortController.signal;
+
+  // Verificar caché (10 min)
+  const cacheKey = ciudad.trim().toLowerCase();
+  const cached = climaCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    esCelsius = true;
+    guardarHistorial(cached.current.name);
+    mostrarClima(cached.current, cached.forecast);
+    return;
+  }
+
   mostrarLoading(true);
 
   try {
-    // Petición al clima actual
-    // &units=metric → temperaturas en Celsius
-    // &lang=es → descripciones en español
     const resCurrent = await fetch(
-      `${API_BASE}/weather?q=${encodeURIComponent(ciudad)}&appid=${API_KEY}&units=metric&lang=es`
+      `${API_BASE}/weather?q=${encodeURIComponent(ciudad)}&appid=${API_KEY}&units=metric&lang=es`,
+      { signal }
     );
 
     // Si la respuesta no fue exitosa (ej: ciudad no encontrada)
@@ -133,27 +156,46 @@ async function buscarClima(ciudad) {
 
     // Petición al pronóstico de 5 días
     const resForecast = await fetch(
-      `${API_BASE}/forecast?q=${encodeURIComponent(ciudad)}&appid=${API_KEY}&units=metric&lang=es`
+      `${API_BASE}/forecast?q=${encodeURIComponent(ciudad)}&appid=${API_KEY}&units=metric&lang=es`,
+      { signal }
     );
     const dataForecast = await resForecast.json();
 
-    // Todo salió bien — mostramos los datos
+    // Guardar en caché
+    climaCache.set(cacheKey, { current: dataCurrent, forecast: dataForecast, ts: Date.now() });
+
     mostrarLoading(false);
+    esCelsius = true;
     guardarHistorial(dataCurrent.name);
     mostrarClima(dataCurrent, dataForecast);
 
   } catch (error) {
+    if (error.name === 'AbortError') return; // petición cancelada intencionalmente
     mostrarLoading(false);
     mostrarError(error.message);
   }
 }
 
 async function buscarPorCoordenadas(lat, lon) {
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+  const signal = abortController.signal;
+
+  const cacheKey = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  const cached = climaCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    esCelsius = true;
+    guardarHistorial(cached.current.name);
+    mostrarClima(cached.current, cached.forecast);
+    return;
+  }
+
   mostrarLoading(true);
 
   try {
     const resCurrent = await fetch(
-      `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`
+      `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`,
+      { signal }
     );
 
     if (!resCurrent.ok) throw new Error('No se pudo obtener el clima de tu ubicación.');
@@ -161,15 +203,20 @@ async function buscarPorCoordenadas(lat, lon) {
     const dataCurrent = await resCurrent.json();
 
     const resForecast = await fetch(
-      `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`
+      `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`,
+      { signal }
     );
     const dataForecast = await resForecast.json();
 
+    climaCache.set(cacheKey, { current: dataCurrent, forecast: dataForecast, ts: Date.now() });
+
     mostrarLoading(false);
+    esCelsius = true;
     guardarHistorial(dataCurrent.name);
     mostrarClima(dataCurrent, dataForecast);
 
   } catch (error) {
+    if (error.name === 'AbortError') return;
     mostrarLoading(false);
     mostrarError(error.message);
   }
@@ -180,23 +227,48 @@ async function buscarPorCoordenadas(lat, lon) {
 // ================================
 
 function mostrarClima(current, forecast) {
+  // Guardar para el toggle de unidades y re-render sin fetch
+  currentWeatherData  = current;
+  currentForecastData = forecast;
+
+  // Conversión según unidad activa
+  const conv   = val => esCelsius ? Math.round(val) : Math.round(val * 9 / 5 + 32);
+  const unidad = esCelsius ? '°' : '°F';
+
   // Datos básicos
   ciudadNombre.textContent = current.name;
   ciudadPais.textContent   = `${current.sys.country} · ${current.coord.lat.toFixed(2)}°, ${current.coord.lon.toFixed(2)}°`;
-  temperatura.textContent  = Math.round(current.main.temp) + '°';
+  temperatura.textContent  = conv(current.main.temp) + unidad;
   descripcion.textContent  = current.weather[0].description;
-  sensacion.textContent    = `Sensación térmica: ${Math.round(current.main.feels_like)}°`;
+  sensacion.textContent    = `Sensación térmica: ${conv(current.main.feels_like)}${unidad}`;
   humedad.textContent      = current.main.humidity + '%';
-  viento.textContent       = Math.round(current.wind.speed * 3.6) + ' km/h';
+  viento.textContent       = `${Math.round(current.wind.speed * 3.6)} km/h ${dirViento(current.wind.deg || 0)}`;
   visibilidad.textContent  = (current.visibility / 1000).toFixed(1) + ' km';
   presion.textContent      = current.main.pressure + ' hPa';
 
-  // Fecha y hora local
-  const ahora = new Date();
-  fechaHora.innerHTML = `
-    ${ahora.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-    <br>${ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-  `;
+  // Amanecer y atardecer en hora local de la ciudad
+  const amanecerEl  = document.getElementById('amanecer');
+  const atardecerEl = document.getElementById('atardecer');
+  if (amanecerEl)  amanecerEl.textContent  = formatHoraUTC(current.sys.sunrise, current.timezone);
+  if (atardecerEl) atardecerEl.textContent = formatHoraUTC(current.sys.sunset,  current.timezone);
+
+  // Botón toggle: muestra la unidad a la que se puede cambiar
+  const btnToggle = document.getElementById('btn-toggle-unidad');
+  if (btnToggle) btnToggle.textContent = esCelsius ? '°F' : '°C';
+
+  // Fecha y hora LOCAL de la ciudad (usa el offset timezone de la API, no el del navegador)
+  const tzOffset  = current.timezone; // segundos desde UTC
+  const nowUTC    = Math.floor(Date.now() / 1000);
+  const localDate = new Date((nowUTC + tzOffset) * 1000);
+
+  const DIAS  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto',
+                 'septiembre','octubre','noviembre','diciembre'];
+
+  const diaStr  = `${DIAS[localDate.getUTCDay()]} ${localDate.getUTCDate()} de ${MESES[localDate.getUTCMonth()]}`;
+  const horaStr = `${String(localDate.getUTCHours()).padStart(2,'0')}:${String(localDate.getUTCMinutes()).padStart(2,'0')}`;
+
+  fechaHora.innerHTML = `${diaStr}<br>${horaStr} <span class="hora-local-label">(hora local)</span>`;
 
   // Icono y tema visual según el clima
   const condicion = current.weather[0].main.toLowerCase();
@@ -204,39 +276,36 @@ function mostrarClima(current, forecast) {
   iconoClima.textContent = obtenerIcono(condicion, esNoche);
   aplicarTema(condicion, esNoche);
 
-  // Pronóstico 5 días
-  // La API devuelve datos cada 3 horas — tomamos uno por día (el del mediodía)
+  // Pronóstico 5 días — agrupado por día en hora local de la ciudad
   const diasUnicos = {};
   forecast.list.forEach(item => {
-    const fecha = new Date(item.dt * 1000);
-    const dia   = fecha.toLocaleDateString('es-AR', { weekday: 'short' });
-    const hora  = fecha.getHours();
-
-    // Tomamos el dato más cercano al mediodía de cada día
-    if (!diasUnicos[dia] || Math.abs(hora - 12) < Math.abs(new Date(diasUnicos[dia].dt * 1000).getHours() - 12)) {
-      diasUnicos[dia] = item;
+    const d    = new Date((item.dt + tzOffset) * 1000);
+    const key  = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+    const hora = d.getUTCHours();
+    if (!diasUnicos[key] || Math.abs(hora - 12) < Math.abs(new Date((diasUnicos[key].dt + tzOffset) * 1000).getUTCHours() - 12)) {
+      diasUnicos[key] = item;
     }
   });
 
-  // Tomamos máximo 5 días
   const diasArray = Object.values(diasUnicos).slice(0, 5);
 
   pronosticoDiv.innerHTML = diasArray.map(item => {
-    const fecha   = new Date(item.dt * 1000);
-    const diaNom  = fecha.toLocaleDateString('es-AR', { weekday: 'short' });
-    const cond    = item.weather[0].main.toLowerCase();
-    const icono   = obtenerIcono(cond, false);
+    const d      = new Date((item.dt + tzOffset) * 1000);
+    const diaNom = DIAS[d.getUTCDay()].slice(0, 3);
+    const diaNum = d.getUTCDate();
+    const mesNom = MESES[d.getUTCMonth()].slice(0, 3);
+    const cond   = item.weather[0].main.toLowerCase();
+    const icono  = obtenerIcono(cond, false);
     return `
       <div class="dia-card">
-        <span class="dia-nombre">${diaNom}</span>
+        <span class="dia-nombre">${diaNom} ${diaNum} ${mesNom}</span>
         <span class="dia-icono">${icono}</span>
-        <span class="dia-temp-max">${Math.round(item.main.temp_max)}°</span>
-        <span class="dia-temp-min">${Math.round(item.main.temp_min)}°</span>
+        <span class="dia-temp-max">${conv(item.main.temp_max)}°</span>
+        <span class="dia-temp-min">${conv(item.main.temp_min)}°</span>
       </div>
     `;
   }).join('');
 
-  // Mostramos la pantalla de clima
   mostrarPantalla('clima');
 }
 
@@ -300,16 +369,20 @@ function mostrarPantalla(cual) {
 function mostrarLoading(estado) {
   if (estado) {
     loading.classList.remove('oculto');
+    btnBuscar.disabled = true;
+    btnBuscar.style.opacity = '0.6';
   } else {
     loading.classList.add('oculto');
+    btnBuscar.disabled = false;
+    btnBuscar.style.opacity = '';
   }
 }
 
 function mostrarError(mensaje) {
+  clearTimeout(errorTimeout);
   errorTexto.textContent = mensaje;
   errorMsg.classList.remove('oculto');
-  // Se oculta solo después de 4 segundos
-  setTimeout(() => errorMsg.classList.add('oculto'), 4000);
+  errorTimeout = setTimeout(() => errorMsg.classList.add('oculto'), 4000);
 }
 
 // ================================
@@ -355,8 +428,33 @@ btnVolver.addEventListener('click', () => {
 
 // Cerrar error manualmente
 btnCerrarError.addEventListener('click', () => {
+  clearTimeout(errorTimeout);
   errorMsg.classList.add('oculto');
 });
+
+// Toggle °C / °F
+document.getElementById('btn-toggle-unidad')?.addEventListener('click', () => {
+  esCelsius = !esCelsius;
+  if (currentWeatherData && currentForecastData) {
+    mostrarClima(currentWeatherData, currentForecastData);
+  }
+});
+
+// ================================
+// HELPERS
+// ================================
+
+// Convierte grados azimutales a punto cardinal
+function dirViento(deg) {
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+// Formatea hora Unix (UTC) ajustada al timezone de la ciudad
+function formatHoraUTC(unixSec, tzOffsetSec) {
+  const d = new Date((unixSec + tzOffsetSec) * 1000);
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
 
 // ================================
 // INIT
@@ -365,6 +463,140 @@ btnCerrarError.addEventListener('click', () => {
 function init() {
   crearEstrellas();
   renderizarHistorial();
+  iniciarGlobo3D();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ================================
+// GLOBO 3D — THREE.JS
+// ================================
+
+function iniciarGlobo3D() {
+  const canvas = document.getElementById('globo-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  const SIZE = canvas.parentElement.clientWidth || 280;
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(SIZE, SIZE);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Escena y cámara
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.z = 2.4;
+
+  // ── Iluminación ──────────────────────────────
+  // Luz ambiente tenue (lado nocturno no queda completamente negro)
+  const ambientLight = new THREE.AmbientLight(0x112244, 1.8);
+  scene.add(ambientLight);
+
+  // Luz solar principal (viene del frente-izquierda-arriba)
+  const sunLight = new THREE.DirectionalLight(0xfff5e0, 3.2);
+  sunLight.position.set(4, 2, 5);
+  scene.add(sunLight);
+
+  // ── Texturas (NASA / Three.js examples) ──────
+  const loader = new THREE.TextureLoader();
+
+  const earthTex   = loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+  const specTex    = loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+  const normalTex  = loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+  const cloudsTex  = loader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+
+  // ── Esfera terrestre ─────────────────────────
+  const earthGeo = new THREE.SphereGeometry(1, 64, 64);
+  const earthMat = new THREE.MeshPhongMaterial({
+    map:         earthTex,
+    specularMap: specTex,
+    normalMap:   normalTex,
+    normalScale: new THREE.Vector2(0.6, 0.6),
+    specular:    new THREE.Color(0x4488aa),
+    shininess:   18,
+  });
+  const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+  scene.add(earthMesh);
+
+  // ── Capa de nubes ────────────────────────────
+  const cloudsGeo = new THREE.SphereGeometry(1.012, 64, 64);
+  const cloudsMat = new THREE.MeshPhongMaterial({
+    map:         cloudsTex,
+    transparent: true,
+    opacity:     0.78,
+    depthWrite:  false,
+  });
+  const cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
+  scene.add(cloudsMesh);
+
+  // ── Halo atmosférico (glow) ──────────────────
+  const glowGeo = new THREE.SphereGeometry(1.08, 64, 64);
+  const glowMat = new THREE.MeshPhongMaterial({
+    color:       0x2277cc,
+    side:        THREE.FrontSide,
+    transparent: true,
+    opacity:     0.10,
+    depthWrite:  false,
+  });
+  const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+  scene.add(glowMesh);
+
+  // ── Interacción: arrastrar para rotar ────────
+  let isDragging = false;
+  let prevX = 0, prevY = 0;
+  let velX = 0, velY = 0;
+
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => { isDragging = false; });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    velX = (e.clientX - prevX) * 0.005;
+    velY = (e.clientY - prevY) * 0.003;
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+
+  // Touch
+  canvas.addEventListener('touchstart', e => {
+    isDragging = true;
+    prevX = e.touches[0].clientX;
+    prevY = e.touches[0].clientY;
+  });
+  window.addEventListener('touchend', () => { isDragging = false; });
+  window.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    velX = (e.touches[0].clientX - prevX) * 0.005;
+    velY = (e.touches[0].clientY - prevY) * 0.003;
+    prevX = e.touches[0].clientX;
+    prevY = e.touches[0].clientY;
+  });
+
+  // ── Loop de animación ────────────────────────
+  function animate() {
+    requestAnimationFrame(animate);
+
+    if (isDragging) {
+      earthMesh.rotation.y  += velX;
+      earthMesh.rotation.x  += velY;
+      cloudsMesh.rotation.y += velX;
+      cloudsMesh.rotation.x += velY;
+      velX *= 0.85;
+      velY *= 0.85;
+    } else {
+      // Auto-rotación suave
+      earthMesh.rotation.y  += 0.0015;
+      cloudsMesh.rotation.y += 0.0018; // nubes van un poco más rápido
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+}

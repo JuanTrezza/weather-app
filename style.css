@@ -104,104 +104,27 @@ body {
 }
 
 /* ================================
-   GLOBO TERRÁQUEO
+   GLOBO TERRÁQUEO 3D
    ================================ */
 .globo-wrap {
   position: relative;
   width: 280px;
   height: 280px;
   margin-bottom: 48px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
+  cursor: grab;
+  filter: drop-shadow(0 0 32px rgba(79, 195, 247, 0.25))
+          drop-shadow(0 20px 40px rgba(0, 0, 0, 0.55));
 }
 
-.globo-wrap:hover {
-  transform: scale(1.04);
+.globo-wrap:active {
+  cursor: grabbing;
 }
 
-/* Halo atmosférico */
-.atmosfera {
-  position: absolute;
-  inset: -16px;
+#globo-canvas {
+  width: 280px !important;
+  height: 280px !important;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 50%,
-    transparent 48%,
-    rgba(100, 200, 255, 0.08) 58%,
-    rgba(79, 195, 247, 0.22) 70%,
-    rgba(79, 195, 247, 0.12) 82%,
-    transparent 100%
-  );
-  animation: pulsar-atmos 5s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-@keyframes pulsar-atmos {
-  from { opacity: 0.6; transform: scale(1); }
-  to   { opacity: 1;   transform: scale(1.02); }
-}
-
-/* Anillo exterior sutil */
-.atmosfera::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border-radius: 50%;
-  border: 1px solid rgba(79, 195, 247, 0.15);
-}
-
-/* La esfera */
-.globo {
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  overflow: hidden;
-  position: relative;
-  box-shadow:
-    inset -50px -30px 90px rgba(0, 0, 0, 0.85),
-    inset 15px 10px 40px rgba(255, 255, 255, 0.04),
-    0 0 80px rgba(79, 195, 247, 0.18),
-    0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-/* Brillo especular — reflejo de luz */
-.globo::after {
-  content: '';
-  position: absolute;
-  top: 8%;
-  left: 12%;
-  width: 35%;
-  height: 28%;
-  background: radial-gradient(
-    ellipse,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    transparent 100%
-  );
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 3;
-  transform: rotate(-20deg);
-}
-
-/* La superficie que gira */
-.superficie {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  animation: rotar-tierra 25s linear infinite;
-  transform-origin: left center;
-  background-image: url('tierra.jpg');
-  background-size: 50% 100%;
-  background-repeat: repeat-x;
-}
-
-
-@keyframes rotar-tierra {
-  from { transform: translateX(0%); }
-  to   { transform: translateX(-50%); }
+  display: block;
 }
 
 /* Sombra debajo del globo */
@@ -338,6 +261,12 @@ body {
   background: rgba(79, 195, 247, 0.1);
 }
 
+.historial-vacio {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 /* ================================
    PANTALLA DE CLIMA
    ================================ */
@@ -382,6 +311,11 @@ body {
   color: var(--texto-suave);
   font-size: 0.9rem;
   text-align: right;
+}
+
+.hora-local-label {
+  font-size: 0.75rem;
+  opacity: 0.6;
 }
 
 /* Temperatura y descripción */
@@ -440,10 +374,31 @@ body {
   font-size: 0.95rem;
 }
 
+/* Botón toggle °C / °F */
+#btn-toggle-unidad {
+  background: rgba(79, 195, 247, 0.12);
+  border: 1px solid rgba(79, 195, 247, 0.35);
+  border-radius: 8px;
+  color: var(--azul-atmos);
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: center;
+  margin-left: 4px;
+}
+
+#btn-toggle-unidad:hover {
+  background: rgba(79, 195, 247, 0.25);
+  transform: translateY(-1px);
+}
+
 /* Grid de detalles */
 .detalles-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 32px;
 }
@@ -508,10 +463,11 @@ body {
 }
 
 .dia-nombre {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--texto-suave);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
 }
 
 .dia-icono { font-size: 1.8rem; }
@@ -637,7 +593,7 @@ body.tema-noche {
 @media (max-width: 480px) {
   .titulo { font-size: 2.2rem; }
   .globo-wrap { width: 200px; height: 200px; }
-  .globo { width: 200px; height: 200px; }
+  #globo-canvas { width: 200px !important; height: 200px !important; }
   #temperatura { font-size: 4.5rem; }
   .detalles-grid { grid-template-columns: repeat(2, 1fr); }
   #pronostico { grid-template-columns: repeat(3, 1fr); }

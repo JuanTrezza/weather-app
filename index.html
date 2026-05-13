@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 </head>
 <body>
 
@@ -20,12 +21,9 @@
       <h1 class="titulo">Weather<span>World</span></h1>
       <p class="subtitulo">Explorá el clima de cualquier lugar del planeta</p>
 
-      <!-- GLOBO TERRÁQUEO -->
+      <!-- GLOBO TERRÁQUEO 3D -->
       <div class="globo-wrap">
-        <div class="atmosfera"></div>
-        <div class="globo">
-          <div class="superficie"></div>
-        </div>
+        <canvas id="globo-canvas"></canvas>
         <div class="sombra-globo"></div>
       </div>
 
@@ -39,9 +37,9 @@
             placeholder="Buscá una ciudad..."
             autocomplete="off"
           >
-          <button id="btn-geolocalizacion" title="Usar mi ubicación">📍</button>
+          <button id="btn-geolocalizacion" title="Usar mi ubicación" aria-label="Usar mi ubicación">📍</button>
         </div>
-        <button id="btn-buscar">Ver clima</button>
+        <button id="btn-buscar" aria-label="Buscar ciudad">Ver clima</button>
       </div>
 
       <!-- HISTORIAL -->
@@ -74,6 +72,7 @@
         <div class="temp-wrap">
           <span id="icono-clima"></span>
           <span id="temperatura"></span>
+          <button id="btn-toggle-unidad" aria-label="Cambiar unidad de temperatura">°F</button>
         </div>
         <p id="descripcion"></p>
         <p id="sensacion"></p>
@@ -100,6 +99,16 @@
           <span class="detalle-icono">🌡️</span>
           <span class="detalle-valor" id="presion"></span>
           <span class="detalle-label">Presión</span>
+        </div>
+        <div class="detalle-card">
+          <span class="detalle-icono">🌅</span>
+          <span class="detalle-valor" id="amanecer"></span>
+          <span class="detalle-label">Amanecer</span>
+        </div>
+        <div class="detalle-card">
+          <span class="detalle-icono">🌇</span>
+          <span class="detalle-valor" id="atardecer"></span>
+          <span class="detalle-label">Atardecer</span>
         </div>
       </div>
 

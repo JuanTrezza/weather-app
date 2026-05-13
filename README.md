@@ -4,43 +4,50 @@ Una aplicación web moderna e interactiva para consultar el clima en tiempo real
 
 ## 🎯 Características
 
-- 🔍 **Búsqueda por ciudad**: Ingresa el nombre de cualquier ciudad para obtener información del clima
-- 📍 **Geolocalización**: Usa tu ubicación actual para obtener el clima automáticamente
-- 📋 **Historial de búsquedas**: Acceso rápido a las últimas 5 ciudades consultadas
+- 🔍 **Búsqueda por ciudad**: Ingresá el nombre de cualquier ciudad para obtener información del clima
+- 📍 **Geolocalización**: Usá tu ubicación actual para obtener el clima automáticamente
+- 📋 **Historial de búsquedas**: Acceso rápido a las últimas 5 ciudades consultadas, con estado vacío cuando no hay historial
 - 🌤️ **Temas dinámicos**: El fondo cambia según las condiciones climáticas
 - ⭐ **Efecto visual de estrellas**: Animación de estrellas titilantes en el fondo
-- 🌐 **Globo terráqueo interactivo**: Visualización 3D del planeta que rota continuamente
-- 📅 **Pronóstico de 5 días**: Predicción del clima para los próximos días
-- 📱 **Diseño responsive**: Funciona perfectamente en dispositivos de cualquier tamaño
+- 🌐 **Globo terráqueo 3D**: Renderizado WebGL con Three.js, texturas NASA de alta resolución, capa de nubes, mapa de normales y brillo especular oceánico. Arrastrá el globo para rotarlo
+- 📅 **Pronóstico de 5 días**: Muestra día, fecha exacta, ícono, máxima y mínima en la hora local de la ciudad
+- 🌡️ **Toggle °C / °F**: Cambiá la unidad de temperatura sin hacer una nueva búsqueda
+- 🕐 **Hora local correcta**: La hora mostrada es la de la ciudad buscada (no la del navegador)
+- 🌅 **Amanecer y atardecer**: Horarios en la zona horaria local de la ciudad
+- 💨 **Dirección del viento**: Velocidad + punto cardinal (N, NE, E, SE…)
+- 📱 **Diseño responsive**: Funciona en dispositivos de cualquier tamaño
 
 ## 📊 Información Mostrada
 
 ### Clima Actual
-- Temperatura actual
+- Temperatura actual con toggle °C / °F
 - Sensación térmica
 - Descripción de las condiciones
 - Humedad
-- Velocidad del viento
+- Velocidad y dirección del viento
 - Visibilidad
 - Presión atmosférica
+- Hora y fecha local de la ciudad
+- Horario de amanecer y atardecer
 
 ### Pronóstico
 - Temperatura máxima y mínima diaria
 - Condiciones climáticas previstas
-- 5 días de predicción
+- 5 días de predicción con fecha exacta
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **HTML5** - Estructura semántica
-- **CSS3** - Estilos avanzados con gradientes y animaciones
-- **JavaScript (Vanilla)** - Lógica de la aplicación sin dependencias externas
-- **OpenWeatherMap API** - Datos meteorológicos en tiempo real
-- **Geolocation API** - Obtención de ubicación del usuario
+- **HTML5** — Estructura semántica con atributos aria para accesibilidad
+- **CSS3** — Estilos avanzados con gradientes y animaciones
+- **JavaScript (Vanilla)** — Lógica de la aplicación sin dependencias adicionales
+- **Three.js** — Globo terráqueo 3D con WebGL
+- **OpenWeatherMap API** — Datos meteorológicos en tiempo real
+- **Geolocation API** — Obtención de ubicación del usuario
 
 ## 🚀 Cómo Usar
 
-1. **En la pantalla principal**, ingresa el nombre de una ciudad en el buscador
-2. **Haz clic en "Ver clima"** o presiona Enter
+1. **En la pantalla principal**, ingresá el nombre de una ciudad en el buscador
+2. **Hacé clic en "Ver clima"** o presioná Enter
 3. La aplicación mostrará:
    - Condiciones climáticas actuales
    - Detalles meteorológicos
@@ -49,9 +56,11 @@ Una aplicación web moderna e interactiva para consultar el clima en tiempo real
 
 ### Funciones Adicionales
 
-- 📍 **Botón de geolocalización**: Obtén el clima de tu ubicación actual
-- 🔙 **Botón Volver**: Regresa a la pantalla de búsqueda
-- 💾 **Historial**: Haz clic en ciudades recientes para búsquedas rápidas
+- 📍 **Botón de geolocalización**: Obtené el clima de tu ubicación actual
+- 🌡️ **Botón °F / °C**: Cambiá la unidad junto a la temperatura
+- 🔙 **Botón Volver**: Regresá a la pantalla de búsqueda
+- 💾 **Historial**: Hacé clic en ciudades recientes para búsquedas rápidas
+- 🌐 **Globo interactivo**: Arrastrá con el mouse o con el dedo para rotarlo
 
 ## 🎨 Temas Visuales
 
@@ -63,6 +72,13 @@ La aplicación adapta su apariencia según el clima:
 - ❄️ **Nieve**: Tonos fríos y azulados
 - 🌙 **Noche**: Tema nocturno oscuro
 
+## ⚡ Optimizaciones Técnicas
+
+- **Caché de 10 minutos**: Buscar la misma ciudad dos veces seguidas no genera un nuevo fetch
+- **Cancelación de requests**: Si se inicia una nueva búsqueda antes de que termine la anterior, la petición vieja se cancela automáticamente con `AbortController`
+- **Anti-spam**: El botón "Ver clima" se deshabilita durante la carga
+- **Fix de errores**: El timeout del mensaje de error se reinicia correctamente si aparece uno nuevo
+
 ## 📁 Estructura de Archivos
 
 ```
@@ -70,13 +86,13 @@ weather-app/
 ├── index.html      # Estructura HTML
 ├── style.css       # Estilos y animaciones
 ├── app.js          # Lógica de la aplicación
-├── tierra.jpg      # Textura del globo terráqueo
+├── tierra.jpg      # Textura fallback del globo
 └── README.md       # Este archivo
 ```
 
-## 🔑 API Key
+## 🔑 API
 
-La aplicación utiliza la API gratuita de **OpenWeatherMap**. La clave API está incluida en el código.
+La aplicación utiliza la API gratuita de **OpenWeatherMap** para datos meteorológicos y las texturas del globo provienen de los ejemplos oficiales de **Three.js** (NASA Earth textures).
 
 Para usar tu propia API key:
 1. Regístrate en [openweathermap.org](https://openweathermap.org)

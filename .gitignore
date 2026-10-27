@@ -1,5 +1,9 @@
+# Dependencias y build
+node_modules/
+dist/
+*.tsbuildinfo
+
 # Secrets y estado local de Wrangler
 .dev.vars*
 !.dev.vars.example
 .wrangler/
-node_modules/

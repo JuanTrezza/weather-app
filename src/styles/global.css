@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================
+   BASE Y TEMAS POR CLIMA
+   ================================ */
+@layer base {
+  :root {
+    /* Colores del fondo: los cambian las clases tema-* del body */
+    --bg-top: #030614;
+    --bg-bottom: #0a0f2e;
+  }
+
+  /* Preflight de Tailwind usa 1.5; el diseño original usa el valor por defecto del navegador */
+  html {
+    line-height: normal;
+  }
+
+  body {
+    @apply min-h-screen overflow-x-hidden font-sans text-white;
+    background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+    transition: background 1.5s ease;
+  }
+
+  body.tema-sol {
+    --bg-top: #e65100;
+    --bg-bottom: #f57c00;
+  }
+
+  body.tema-nublado {
+    --bg-top: #263238;
+    --bg-bottom: #37474f;
+  }
+
+  body.tema-lluvia {
+    --bg-top: #0d1b2a;
+    --bg-bottom: #1b3a5c;
+  }
+
+  body.tema-tormenta {
+    --bg-top: #1a0533;
+    --bg-bottom: #2d1b69;
+  }
+
+  body.tema-nieve {
+    --bg-top: #e0f2f1;
+    --bg-bottom: #b2dfdb;
+  }
+
+  body.tema-noche {
+    --bg-top: #000005;
+    --bg-bottom: #0a0a1a;
+  }
+}
+
+/* ================================
+   PIEZAS CON ESTILOS COMPUESTOS
+   ================================ */
+@layer components {
+  .pantalla {
+    @apply relative z-[1] mx-auto min-h-screen max-w-[680px] px-5 py-6 max-[480px]:pb-12;
+  }
+
+  .pantalla[hidden] {
+    display: none;
+  }
+
+  .globo-wrap {
+    filter: drop-shadow(0 0 32px rgba(79, 195, 247, 0.25)) drop-shadow(0 20px 40px rgba(0, 0, 0, 0.55));
+  }
+
+  /* Sombra debajo del globo */
+  .sombra-globo {
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 24px;
+    background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 70%);
+    filter: blur(4px);
+  }
+}

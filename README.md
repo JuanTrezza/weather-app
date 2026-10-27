@@ -37,10 +37,11 @@ Una aplicación web moderna e interactiva para consultar el clima en tiempo real
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **HTML5** — Estructura semántica con atributos aria para accesibilidad
-- **CSS3** — Estilos avanzados con gradientes y animaciones
-- **JavaScript (Vanilla)** — Lógica de la aplicación sin dependencias adicionales
-- **Three.js** — Globo terráqueo 3D con WebGL
+- **React 19 + TypeScript (strict)** — Componentes y hooks, con atributos aria para accesibilidad
+- **Vite** — Desarrollo y build
+- **Tailwind CSS v3** — Estilos, con un CSS global para los temas y el globo
+- **Three.js** (npm) — Globo terráqueo 3D con WebGL; texturas empaquetadas con la app
+- **Cloudflare Workers** — Proxy que guarda la API key
 - **OpenWeatherMap API** — Datos meteorológicos en tiempo real
 - **Geolocation API** — Obtención de ubicación del usuario
 
@@ -83,13 +84,29 @@ La aplicación adapta su apariencia según el clima:
 
 ```
 weather-app/
-├── index.html      # Estructura HTML
-├── style.css       # Estilos y animaciones
-├── app.js          # Lógica de la aplicación
-├── tierra.jpg      # Textura fallback del globo
-├── worker/         # Cloudflare Worker que protege la API key
-└── README.md       # Este archivo
+├── index.html                # Punto de entrada de Vite
+├── src/
+│   ├── App.tsx               # Pantallas y estado general
+│   ├── components/           # Globe, Stars, SearchBar, History, WeatherScreen, Details, Forecast, Loading, ErrorToast
+│   ├── hooks/                # useWeather, useHistory, useUnit
+│   ├── services/weatherApi.ts# Llamadas al Worker, caché y mensajes de error
+│   ├── types/weather.ts      # Tipos de las respuestas
+│   ├── utils/                # Hora local, viento, íconos y temas
+│   ├── styles/global.css     # Tailwind + temas por clima
+│   └── assets/textures/      # Texturas del globo (tierra.webp es el fallback)
+├── worker/                   # Cloudflare Worker que protege la API key
+└── .github/workflows/        # Deploy a GitHub Pages
 ```
+
+## 💻 Desarrollo local
+
+```bash
+npm install
+npm run dev      # http://localhost:5173/weather-app/
+npm run build    # genera dist/
+```
+
+En desarrollo la app llama al Worker local (`http://127.0.0.1:8787`): corré `npx wrangler dev` dentro de `worker/` (ver más abajo). Cada push a `main` despliega en GitHub Pages con GitHub Actions.
 
 ## 🔑 API
 
@@ -107,7 +124,7 @@ Para usar tu propia API key:
 1. Registrate en [openweathermap.org](https://openweathermap.org) y obtené tu API key
 2. En `worker/`, copiá `.dev.vars.example` como `.dev.vars` y poné la key (para desarrollo local)
 3. En producción: `npx wrangler secret put OPENWEATHER_API_KEY` y `npx wrangler deploy`
-4. Si usás tu propio Worker, cambiá la URL de producción en `API_URL` (al principio de `app.js`)
+4. Si usás tu propio Worker, cambiá la URL de producción en `API_URL` (`src/services/weatherApi.ts`)
 
 ## 💾 Almacenamiento Local
 

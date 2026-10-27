@@ -1,0 +1,2 @@
+# Copiá este archivo como .dev.vars y poné tu key real. .dev.vars está en .gitignore.
+OPENWEATHER_API_KEY=tu-api-key

@@ -87,6 +87,7 @@ weather-app/
 ├── style.css       # Estilos y animaciones
 ├── app.js          # Lógica de la aplicación
 ├── tierra.jpg      # Textura fallback del globo
+├── worker/         # Cloudflare Worker que protege la API key
 └── README.md       # Este archivo
 ```
 
@@ -94,10 +95,19 @@ weather-app/
 
 La aplicación utiliza la API gratuita de **OpenWeatherMap** para datos meteorológicos y las texturas del globo provienen de los ejemplos oficiales de **Three.js** (NASA Earth textures).
 
+La API key **no** está en el frontend: la app llama a un Cloudflare Worker (`worker/`) que agrega la key, valida los parámetros, cachea las respuestas y limita a 30 pedidos por minuto por IP.
+
+| Endpoint | Parámetros |
+|---|---|
+| `GET /api/weather` | `city` o `lat` + `lon` |
+| `GET /api/forecast` | `city` o `lat` + `lon` |
+| `GET /api/geocode` | `q`, `limit` (1–5) |
+
 Para usar tu propia API key:
-1. Regístrate en [openweathermap.org](https://openweathermap.org)
-2. Obtén tu API key
-3. Reemplaza el valor de `API_KEY` en `app.js`
+1. Registrate en [openweathermap.org](https://openweathermap.org) y obtené tu API key
+2. En `worker/`, copiá `.dev.vars.example` como `.dev.vars` y poné la key (para desarrollo local)
+3. En producción: `npx wrangler secret put OPENWEATHER_API_KEY` y `npx wrangler deploy`
+4. Si usás tu propio Worker, cambiá la URL de producción en `API_URL` (al principio de `app.js`)
 
 ## 💾 Almacenamiento Local
 

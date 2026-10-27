@@ -1,9 +1,12 @@
 // ================================
-// API KEY Y CONFIGURACIÓN
+// CONFIGURACIÓN
 // ================================
 
-const API_KEY = '8c335fb9e2c889756966196d6839bfc0';
-const API_BASE = 'https://api.openweathermap.org/data/2.5';
+// La API key vive en el Worker de Cloudflare (worker/), nunca en el frontend.
+const ES_LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+const API_URL  = ES_LOCAL
+  ? 'http://127.0.0.1:8787'
+  : 'https://weather-world-api.juantrezza.workers.dev';
 
 // ================================
 // SELECTORES
@@ -121,6 +124,20 @@ function renderizarHistorial() {
 // FETCH A LA API
 // ================================
 
+// Pide un endpoint del Worker y traduce los errores HTTP a mensajes para el usuario
+async function pedirAPI(endpoint, params, signal, errorGeneral) {
+  const res = await fetch(`${API_URL}/api/${endpoint}?${new URLSearchParams(params)}`, { signal });
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Ciudad no encontrada. Verificá el nombre.');
+    if (res.status === 429) throw new Error('Demasiadas búsquedas. Esperá un minuto e intentá de nuevo.');
+    if (res.status === 503) throw new Error('Servicio no disponible, probá más tarde.');
+    throw new Error(errorGeneral);
+  }
+
+  return res.json();
+}
+
 async function buscarClima(ciudad) {
   // Cancelar petición anterior si aún está en vuelo
   if (abortController) abortController.abort();
@@ -140,26 +157,12 @@ async function buscarClima(ciudad) {
   mostrarLoading(true);
 
   try {
-    const resCurrent = await fetch(
-      `${API_BASE}/weather?q=${encodeURIComponent(ciudad)}&appid=${API_KEY}&units=metric&lang=es`,
-      { signal }
-    );
-
-    // Si la respuesta no fue exitosa (ej: ciudad no encontrada)
-    if (!resCurrent.ok) {
-      if (resCurrent.status === 404) throw new Error('Ciudad no encontrada. Verificá el nombre.');
-      if (resCurrent.status === 401) throw new Error('API key inválida.');
-      throw new Error('Error al obtener el clima. Intentá de nuevo.');
-    }
-
-    const dataCurrent = await resCurrent.json();
+    const params = { city: ciudad };
+    const errorGeneral = 'Error al obtener el clima. Intentá de nuevo.';
+    const dataCurrent = await pedirAPI('weather', params, signal, errorGeneral);
 
     // Petición al pronóstico de 5 días
-    const resForecast = await fetch(
-      `${API_BASE}/forecast?q=${encodeURIComponent(ciudad)}&appid=${API_KEY}&units=metric&lang=es`,
-      { signal }
-    );
-    const dataForecast = await resForecast.json();
+    const dataForecast = await pedirAPI('forecast', params, signal, errorGeneral);
 
     // Guardar en caché
     climaCache.set(cacheKey, { current: dataCurrent, forecast: dataForecast, ts: Date.now() });
@@ -193,20 +196,10 @@ async function buscarPorCoordenadas(lat, lon) {
   mostrarLoading(true);
 
   try {
-    const resCurrent = await fetch(
-      `${API_BASE}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`,
-      { signal }
-    );
-
-    if (!resCurrent.ok) throw new Error('No se pudo obtener el clima de tu ubicación.');
-
-    const dataCurrent = await resCurrent.json();
-
-    const resForecast = await fetch(
-      `${API_BASE}/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`,
-      { signal }
-    );
-    const dataForecast = await resForecast.json();
+    const params = { lat, lon };
+    const errorGeneral = 'No se pudo obtener el clima de tu ubicación.';
+    const dataCurrent  = await pedirAPI('weather', params, signal, errorGeneral);
+    const dataForecast = await pedirAPI('forecast', params, signal, errorGeneral);
 
     climaCache.set(cacheKey, { current: dataCurrent, forecast: dataForecast, ts: Date.now() });
 

@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "weather-world-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+
+  // Variables públicas (NO secretas). La API key va como secret: `wrangler secret put OPENWEATHER_API_KEY`.
+  "vars": {
+    "ALLOWED_ORIGINS": "https://juantrezza.github.io,http://localhost:5173,http://127.0.0.1:5500"
+  },
+
+  // 30 pedidos por minuto por IP. namespace_id debe ser único dentro de la cuenta.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "5821",
+      "simple": { "limit": 30, "period": 60 }
+    }
+  ]
+}

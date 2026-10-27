@@ -1,95 +1,94 @@
+import { useEffect, useRef, useState } from 'react';
 import type { Unit } from '../hooks/useUnit';
 import type { WeatherData } from '../types/weather';
-import { fechaHoraLocal } from '../utils/time';
-import { obtenerIcono } from '../utils/weather';
+import { resumenDiario, tipoCielo } from '../utils/weather';
 import Details from './Details';
 import Forecast from './Forecast';
+import HourlyChart from './HourlyChart';
+import { IconoVolver } from './Icons';
+import UnitToggle from './UnitToggle';
+import WeatherHero from './WeatherHero';
 
 interface Props {
   data: WeatherData;
+  /** Nombre de la ciudad a mostrar (el elegido, o el de la API) */
+  nombre: string;
   unit: Unit;
   onVolver: () => void;
 }
 
-export default function WeatherScreen({ data, unit, onVolver }: Props) {
+export default function WeatherScreen({ data, nombre, unit, onVolver }: Props) {
   const { current, forecast } = data;
-  const { conv, unidad } = unit;
-  const clima = current.weather[0];
-  const condicion = clima?.main.toLowerCase() ?? '';
-  const esNoche = clima?.icon.includes('n') ?? false;
+  const tituloRef = useRef<HTMLHeadingElement>(null);
+  const [compacto, setCompacto] = useState(false);
 
-  // Fecha y hora LOCAL de la ciudad (usa el offset timezone de la API, no el del navegador)
-  const { dia, hora } = fechaHoraLocal(current.timezone);
-  const pais = current.sys.country ? `${current.sys.country} · ` : '';
+  // Al llegar a la pantalla, el foco va al nombre de la ciudad (teclado y lectores de pantalla)
+  useEffect(() => {
+    tituloRef.current?.focus({ preventScroll: true });
+  }, [current]);
+
+  // Header compacto: cuando el nombre de la ciudad sale de la vista, aparece arriba
+  useEffect(() => {
+    const titulo = tituloRef.current;
+    if (!titulo) return;
+    const observer = new IntersectionObserver(([entry]) => setCompacto(!entry?.isIntersecting), {
+      rootMargin: '-64px 0px 0px 0px',
+    });
+    observer.observe(titulo);
+    return () => observer.disconnect();
+  }, []);
+
+  // Máxima y mínima de hoy: del pronóstico (más la temperatura actual); si no hay tramos de hoy, del clima actual
+  const hoy = resumenDiario(forecast.list, current.timezone, current.main.temp, 1)[0];
+  const max = hoy?.esHoy ? hoy.max : current.main.temp_max;
+  const min = hoy?.esHoy ? hoy.min : current.main.temp_min;
 
   return (
-    <section className="pantalla" aria-labelledby="ciudad-nombre">
-      <button
-        type="button"
-        onClick={onVolver}
-        aria-label="Volver a la búsqueda"
-        className="mb-6 cursor-pointer rounded-full border border-card-borde bg-card px-[18px] py-2 font-sans text-[13.333px] text-white backdrop-blur-[10px] transition-all duration-200 hover:border-atmos"
+    <section className="min-h-screen pb-seguro" aria-labelledby="ciudad-nombre">
+      <header
+        className={`pt-seguro px-seguro sticky top-0 z-20 transition-[background-color,border-color,backdrop-filter] duration-300 ${
+          compacto ? 'border-b border-white/10 bg-black/30 backdrop-blur-xl' : 'border-b border-transparent'
+        }`}
       >
-        ← Volver
-      </button>
-
-      {/* CABECERA */}
-      <div className="mb-8 flex items-start justify-between gap-4 max-[480px]:flex-col max-[480px]:gap-2">
-        <div className="min-w-0">
-          <h2
-            id="ciudad-nombre"
-            className="font-display text-[2.2rem] font-extrabold leading-[1.1] [overflow-wrap:anywhere]"
-          >
-            {current.name}
-          </h2>
-          <p className="mt-1 text-base text-suave">
-            {pais}
-            {current.coord.lat.toFixed(2)}°, {current.coord.lon.toFixed(2)}°
-          </p>
-        </div>
-        <p className="shrink-0 text-right text-[0.9rem] text-suave">
-          {dia}
-          <br />
-          {hora} <span className="text-[0.75rem] opacity-60">(hora local)</span>
-        </p>
-      </div>
-
-      {/* CLIMA PRINCIPAL */}
-      <div className="mb-8 text-center">
-        {/* Si no entra (pantallas angostas, °F) el botón de unidad baja a otra línea en vez de desbordar */}
-        <div className="mb-2 flex flex-wrap items-center justify-center gap-4 max-[360px]:gap-2">
-          <span
-            role="img"
-            aria-label={clima?.description ?? ''}
-            className="text-[5rem] [filter:drop-shadow(0_0_20px_rgba(255,255,255,0.3))] max-[360px]:text-[3.5rem]"
-          >
-            {obtenerIcono(condicion, esNoche)}
-          </span>
-          <span className="bg-gradient-to-br from-white to-atmos bg-clip-text font-display text-[6rem] font-extrabold leading-none text-transparent max-[480px]:text-[4.5rem] max-[360px]:text-[3.5rem]">
-            {conv(current.main.temp)}
-            {unidad}
-          </span>
-          {/* Muestra la unidad a la que se puede cambiar */}
+        <div className="mx-auto flex max-w-3xl items-center gap-2 pb-2">
           <button
             type="button"
-            onClick={unit.alternar}
-            aria-label="Cambiar unidad de temperatura"
-            className="ml-1 cursor-pointer self-center rounded-lg border border-atmos/35 bg-atmos/[0.12] px-3 py-1.5 font-display text-base font-bold text-atmos transition-all duration-200 hover:-translate-y-px hover:bg-atmos/25"
+            onClick={onVolver}
+            aria-label="Volver a la búsqueda"
+            className="glass-interactiva inline-flex h-tactil shrink-0 items-center gap-1 rounded-full pl-2.5 pr-4 text-[0.95rem]"
           >
-            {unit.esCelsius ? '°F' : '°C'}
+            <IconoVolver className="h-5 w-5" />
+            Volver
           </button>
+          <p
+            className={`min-w-0 flex-1 truncate text-center font-display font-bold transition-opacity duration-300 ${
+              compacto ? 'opacity-100' : 'opacity-0'
+            }`}
+            aria-hidden="true"
+          >
+            {nombre} <span className="font-sans font-medium tabular-nums text-suave">{unit.conv(current.main.temp)}{unit.unidad}</span>
+          </p>
+          <UnitToggle unit={unit} />
         </div>
-        <p className="mx-auto mb-1 max-w-[90%] overflow-hidden text-ellipsis whitespace-nowrap text-[1.2rem] capitalize leading-[1.3]">
-          {clima?.description}
-        </p>
-        <p className="text-[0.95rem] text-suave">
-          Sensación térmica: {conv(current.main.feels_like)}
-          {unidad}
-        </p>
-      </div>
+      </header>
 
-      <Details current={current} />
-      <Forecast forecast={forecast} timezone={current.timezone} conv={conv} />
+      <div className="px-seguro mt-2">
+        <div className="mx-auto flex max-w-3xl flex-col gap-4">
+          <WeatherHero current={current} nombre={nombre} max={max} min={min} unit={unit} tituloRef={tituloRef} />
+          <Details current={current} desde={1} />
+          <HourlyChart forecast={forecast} timezone={current.timezone} conv={unit.conv} unidad={unit.unidad} desde={9} />
+          <Forecast
+            forecast={forecast}
+            timezone={current.timezone}
+            tempActual={current.main.temp}
+            // "Hoy" muestra el cielo de ahora (de noche, la luna), no el del mediodía
+            iconoHoy={{ cielo: tipoCielo(current.weather[0]), esNoche: current.weather[0]?.icon.endsWith('n') ?? false }}
+            conv={unit.conv}
+            unidad={unit.unidad}
+            desde={10}
+          />
+        </div>
+      </div>
     </section>
   );
 }

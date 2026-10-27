@@ -30,8 +30,14 @@ export function fechaHoraLocal(tzOffsetSec: number): { dia: string; hora: string
   };
 }
 
-/** Etiqueta corta de un día: "lun 27 oct" */
-export function etiquetaDia(unixSec: number, tzOffsetSec: number): string {
+/** Día de la semana y número: { semana: "Mié", numero: 28, completo: "miércoles 28 de octubre" } */
+export function diaPronostico(unixSec: number, tzOffsetSec: number) {
   const d = fechaLocal(unixSec, tzOffsetSec);
-  return `${DIAS[d.getUTCDay()]!.slice(0, 3)} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]!.slice(0, 3)}`;
+  const dia = DIAS[d.getUTCDay()]!;
+  return {
+    semana: dia.charAt(0).toUpperCase() + dia.slice(1, 3),
+    numero: d.getUTCDate(),
+    completo: `${dia} ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]}`,
+  };
 }
+

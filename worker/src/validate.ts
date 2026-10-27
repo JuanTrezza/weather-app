@@ -5,8 +5,10 @@ export type Location = { q: string } | { lat: string; lon: string };
 
 const MAX_TEXT = 100;
 const MAX_LIMIT = 5;
-// Plain decimal numbers only: rejects "", "1e2", "0x10", "Infinity", etc.
-const DECIMAL = /^-?\d{1,3}(\.\d{1,12})?$/;
+// Plain decimal numbers with any number of decimals (GPS sends 14+): rejects "", "1e2", "0x10", "Infinity", etc.
+const DECIMAL = /^-?\d{1,3}(\.\d+)?$/;
+// Generous cap so a huge query string can't reach Number()
+const MAX_COORD_LENGTH = 32;
 
 export function validateLocation(params: URLSearchParams): Result<Location> {
   const city = params.get('city');
@@ -26,7 +28,8 @@ export function validateLocation(params: URLSearchParams): Result<Location> {
   const lonNum = parseCoord(lon, 180);
   if (lonNum === null) return fail('lon tiene que ser un número entre -180 y 180.');
 
-  // ~11 m of precision: plenty for weather, and improves cache hits.
+  // Rounded to 4 decimals (~11 m) before calling OpenWeather and before building the cache key,
+  // so nearly identical locations share the cache.
   return { ok: true, value: { lat: round(latNum), lon: round(lonNum) } };
 }
 
@@ -58,9 +61,9 @@ function validateText(raw: string, name: string): Result<string> {
 }
 
 function parseCoord(raw: string, max: number): number | null {
-  if (!DECIMAL.test(raw)) return null;
+  if (raw.length > MAX_COORD_LENGTH || !DECIMAL.test(raw)) return null;
   const n = Number(raw);
-  return n >= -max && n <= max ? n : null;
+  return Number.isFinite(n) && n >= -max && n <= max ? n : null;
 }
 
 function round(n: number): string {

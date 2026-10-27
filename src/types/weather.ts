@@ -18,12 +18,17 @@ export interface CurrentWeather {
   main: {
     temp: number;
     feels_like: number;
+    temp_min: number;
+    temp_max: number;
     pressure: number;
     humidity: number;
   };
   /** Metros; OpenWeather a veces lo omite */
   visibility?: number;
-  wind: { speed: number; deg?: number };
+  /** m/s; gust solo viene cuando hay ráfagas */
+  wind: { speed: number; deg?: number; gust?: number };
+  /** Nubosidad en % */
+  clouds?: { all: number };
   sys: { country?: string; sunrise: number; sunset: number };
   /** Desplazamiento respecto de UTC, en segundos */
   timezone: number;
@@ -38,6 +43,8 @@ export interface ForecastItem {
     temp_max: number;
   };
   weather: WeatherCondition[];
+  /** Probabilidad de precipitación, de 0 a 1 */
+  pop?: number;
 }
 
 export interface Forecast {
@@ -45,6 +52,7 @@ export interface Forecast {
   city: { timezone: number };
 }
 
+/** Resultado de /api/geocode (Geocoding API de OpenWeather) */
 export interface GeocodeResult {
   name: string;
   local_names?: Record<string, string>;

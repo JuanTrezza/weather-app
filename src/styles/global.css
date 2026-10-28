@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fuentes locales (variables, subset latino: cubre el castellano). Van en el precache: funcionan sin conexión.
+   Syne se usa en 700 y 800; DM Sans de 400 a 700. Licencia OFL (src/assets/fonts/OFL.txt) */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700 800;
+  font-display: swap;
+  src: url('../assets/fonts/syne-latin-wght.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../assets/fonts/dm-sans-latin-wght.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Arial con las métricas de DM Sans: mientras llega la fuente (swap) el texto ocupa lo mismo y nada se mueve.
+   Con line-height normal, DM Sans mide 1,302 em de alto y Arial 1,15 em; el ancho de DM Sans es 2,28 % mayor.
+   (Syne no lo necesita: se usa con leading-none, su alto no depende de la fuente) */
+@font-face {
+  font-family: 'DM Sans Fallback';
+  src: local('Arial'), local('ArialMT');
+  size-adjust: 102.28%;
+  ascent-override: 96.99%;
+  descent-override: 30.31%;
+  line-gap-override: 0%;
+}
+
 /* Colores del fondo registrados como <color> para que el degradado pueda transicionar */
 @property --bg-arriba {
   syntax: '<color>';

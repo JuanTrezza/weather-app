@@ -51,7 +51,7 @@ export default function History({ ciudades, onElegir }: Props) {
               className={CHIP}
             >
               {ciudad.pais ? (
-                <span className="text-base leading-none" aria-hidden="true">
+                <span className="font-emoji text-base leading-none" aria-hidden="true">
                   {banderaEmoji(ciudad.pais)}
                 </span>
               ) : (

@@ -8,8 +8,20 @@ export function banderaEmoji(iso: string): string {
 
 let nombresPaises: Intl.DisplayNames | null = null;
 
+// Los países de las ciudades populares de la pantalla inicial: crear Intl.DisplayNames carga los datos
+// de regiones y frena el primer render (~40 ms en un celular), así que estos no lo necesitan
+const PAISES_COMUNES: Record<string, string> = {
+  AR: 'Argentina',
+  ES: 'España',
+  JP: 'Japón',
+  US: 'Estados Unidos',
+  GB: 'Reino Unido',
+};
+
 /** Nombre del país en castellano ("ES" → "España"); si el navegador no puede, el código */
 export function nombrePais(iso: string): string {
+  const comun = PAISES_COMUNES[iso.toUpperCase()];
+  if (comun) return comun;
   try {
     nombresPaises ??= new Intl.DisplayNames(['es'], { type: 'region' });
     return nombresPaises.of(iso.toUpperCase()) ?? iso;

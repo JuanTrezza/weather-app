@@ -50,5 +50,8 @@ export default function InstallPrompt() {
     );
   }
 
+  // Mismo alto que el botón: cuando llegue el evento, aparece sin mover el contenido
+  if (instalacion.tipo === 'esperando') return <div className="h-tactil" aria-hidden="true" />;
+
   return null;
 }

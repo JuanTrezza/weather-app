@@ -187,7 +187,7 @@ export default function SearchBar({
                     i === activo ? 'bg-white/[0.14]' : 'hover:bg-white/[0.08]'
                   }`}
                 >
-                  <span className="w-7 shrink-0 text-center text-xl leading-none" aria-hidden="true">
+                  <span className="w-7 shrink-0 text-center font-emoji text-xl leading-none" aria-hidden="true">
                     {banderaEmoji(lugar.country)}
                   </span>
                   <span className="min-w-0 flex-1 leading-tight">

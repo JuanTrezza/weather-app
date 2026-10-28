@@ -14,8 +14,10 @@ export default {
         'card-borde': 'rgba(255, 255, 255, 0.14)',
       },
       fontFamily: {
-        sans: ['"DM Sans"', 'sans-serif'],
+        sans: ['"DM Sans"', '"DM Sans Fallback"', 'sans-serif'],
         display: ['Syne', 'sans-serif'],
+        // Banderas: nombrar la fuente emoji de cada sistema evita que el navegador la busque entre todas (es lento)
+        emoji: ['"Apple Color Emoji"', '"Segoe UI Emoji"', '"Noto Color Emoji"', 'sans-serif'],
       },
       borderRadius: {
         card: '16px',

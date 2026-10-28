@@ -39,6 +39,8 @@ const descartadoHaceMenosDe7Dias = () => Date.now() - Number(leer(DESCARTADO_KEY
 export type Instalacion =
   | { tipo: 'nativa'; instalar: () => Promise<void>; descartar: () => void }
   | { tipo: 'ios'; descartar: () => void }
+  // El navegador puede ofrecer instalar pero todavía no lanzó el evento: se reserva el lugar del botón
+  | { tipo: 'esperando' }
   | { tipo: null };
 
 /**
@@ -49,6 +51,9 @@ export function useInstallPrompt(): Instalacion {
   const [evento, setEvento] = useState<BeforeInstallPromptEvent | null>(null);
   const [instalada, setInstalada] = useState(yaInstalada);
   const [avisoIos, setAvisoIos] = useState(() => !yaInstalada() && esIOS() && !leer(AVISO_IOS_KEY));
+  // beforeinstallprompt suele llegar después de la primera pintura: si el botón apareciera sin lugar reservado,
+  // empujaría el contenido centrado (layout shift)
+  const [puedeOfrecer] = useState(() => 'onbeforeinstallprompt' in window && !descartadoHaceMenosDe7Dias());
 
   useEffect(() => {
     const alOfrecer = (e: Event) => {
@@ -94,5 +99,6 @@ export function useInstallPrompt(): Instalacion {
   if (instalada) return { tipo: null };
   if (evento) return { tipo: 'nativa', instalar, descartar };
   if (avisoIos) return { tipo: 'ios', descartar: cerrarAvisoIos };
+  if (puedeOfrecer) return { tipo: 'esperando' };
   return { tipo: null };
 }

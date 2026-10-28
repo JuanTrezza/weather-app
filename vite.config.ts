@@ -47,18 +47,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: `${BASE}index.html`,
         cleanupOutdatedCaches: true,
+        // Las fuentes son locales (woff2 en el precache): no hace falta cachear Google Fonts
         runtimeCaching: [
-          {
-            // Google Fonts: la hoja de estilos y los archivos de fuente
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 365 * UN_DIA },
-              // La hoja de estilos llega como respuesta opaca (status 0)
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
           {
             // Clima y pronóstico del Worker: la red primero; sin conexión (o si tarda más de 5 s), la última respuesta
             urlPattern: ({ url }) => /\/api\/(weather|forecast)$/.test(url.pathname),
@@ -85,8 +75,8 @@ export default defineConfig({
     }),
   ],
   build: {
-    // Three.js (~600 kB, casi no se reduce con tree-shaking) va en su propio chunk: cambia poco,
-    // así una versión nueva de la app no obliga al service worker a volver a bajarlo
+    // Three.js (~520 kB, casi no se reduce con tree-shaking) va en su propio chunk: se carga con import()
+    // después de la primera pintura y, como cambia poco, una versión nueva de la app no obliga a volver a bajarlo
     chunkSizeWarningLimit: 700,
     rolldownOptions: {
       output: {

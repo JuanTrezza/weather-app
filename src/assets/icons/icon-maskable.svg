@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>WeatherWorld</title>
+  <defs>
+    <radialGradient id="fondo" cx="50%" cy="38%" r="78%">
+      <stop offset="0" stop-color="#16245a"/>
+      <stop offset="1" stop-color="#030614"/>
+    </radialGradient>
+    <radialGradient id="globo" cx="36%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#8fdcff"/>
+      <stop offset=".45" stop-color="#2b8fd6"/>
+      <stop offset="1" stop-color="#0a2560"/>
+    </radialGradient>
+    <radialGradient id="halo">
+      <stop offset=".62" stop-color="#4fc3f7" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#4fc3f7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="brillo-sol">
+      <stop offset=".4" stop-color="#ffc93c" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#ffc93c" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="esfera"><circle cx="256" cy="256" r="118"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#fondo)"/>
+  <g fill="#fff">
+    <circle cx="118" cy="128" r="3" opacity=".8"/><circle cx="392" cy="104" r="2.5" opacity=".7"/>
+    <circle cx="420" cy="352" r="3" opacity=".6"/><circle cx="96" cy="380" r="2.5" opacity=".7"/>
+    <circle cx="168" cy="88" r="1.8" opacity=".6"/><circle cx="344" cy="430" r="2" opacity=".5"/>
+  </g>
+  <circle cx="256" cy="256" r="160" fill="url(#halo)"/>
+  <!-- Órbita: la mitad de atrás va debajo del globo -->
+  <g transform="rotate(-22 256 256)">
+    <ellipse cx="256" cy="256" rx="196" ry="64" fill="none" stroke="#bfe9ff" stroke-opacity=".55" stroke-width="7"/>
+  </g>
+  <circle cx="256" cy="256" r="118" fill="url(#globo)"/>
+  <g clip-path="url(#esfera)" fill="none" stroke="#ffffff" stroke-opacity=".32" stroke-width="5">
+    <ellipse cx="256" cy="256" rx="52" ry="118"/>
+    <ellipse cx="256" cy="256" rx="98" ry="118"/>
+    <line x1="138" y1="256" x2="374" y2="256"/>
+    <path d="M150 196 Q256 214 362 196 M150 316 Q256 298 362 316"/>
+  </g>
+  <circle cx="256" cy="256" r="118" fill="none" stroke="#8fdcff" stroke-opacity=".5" stroke-width="3"/>
+  <!-- Mitad de adelante de la órbita, sobre el globo -->
+  <g transform="rotate(-22 256 256)">
+    <path d="M60 256 A196 64 0 0 0 452 256" fill="none" stroke="#bfe9ff" stroke-opacity=".9" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="405" cy="294" r="46" fill="url(#brillo-sol)"/>
+    <circle cx="405" cy="294" r="24" fill="#ffc93c"/>
+  </g>
+</svg>

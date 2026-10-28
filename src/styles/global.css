@@ -47,6 +47,25 @@
     @apply min-h-screen overflow-x-hidden bg-espacio font-sans text-white antialiased;
   }
 
+  /* Sin zoom por doble toque en los controles (el zoom con pellizco sigue funcionando) */
+  button,
+  a,
+  input,
+  label,
+  summary,
+  [role='button'],
+  [role='option'] {
+    touch-action: manipulation;
+  }
+
+  /* App instalada: sin el rebote del scroll que deja ver el fondo detrás de la página */
+  @media (display-mode: standalone) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
+
   /* Foco visible con teclado en todo lo interactivo */
   :focus-visible {
     outline: 2px solid theme('colors.atmos');

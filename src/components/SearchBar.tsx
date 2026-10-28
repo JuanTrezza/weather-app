@@ -13,17 +13,29 @@ interface Props {
   /** Se eligió una sugerencia: buscar por lat/lon */
   onElegirLugar: (lugar: GeocodeResult) => void;
   onUbicacion: () => void;
+  /** Sin conexión: el autocompletado se desactiva y se explica por qué */
+  sinConexion?: boolean;
   inputRef?: Ref<HTMLInputElement>;
 }
 
 /** Buscador tipo "pill" con autocompletado (patrón combobox de WAI-ARIA) */
-export default function SearchBar({ valor, cargando, onCambio, onBuscar, onElegirLugar, onUbicacion, inputRef }: Props) {
+export default function SearchBar({
+  valor,
+  cargando,
+  onCambio,
+  onBuscar,
+  onElegirLugar,
+  onUbicacion,
+  sinConexion = false,
+  inputRef,
+}: Props) {
+  const idAyuda = useId();
   const idLista = useId();
   const contenedorRef = useRef<HTMLDivElement>(null);
   // Solo se sugiere mientras el usuario escribe (no después de elegir, enviar o apretar Escape)
   const [escribiendo, setEscribiendo] = useState(false);
   const [activo, setActivo] = useState(-1);
-  const { sugerencias, estado } = useCitySuggestions(valor, escribiendo && !cargando);
+  const { sugerencias, estado } = useCitySuggestions(valor, escribiendo && !cargando && !sinConexion);
 
   const hayOpciones = estado === 'listo' && sugerencias.length > 0;
   const abierto = escribiendo && (estado === 'cargando' || estado === 'listo');
@@ -123,7 +135,8 @@ export default function SearchBar({ valor, cargando, onCambio, onBuscar, onElegi
           enterKeyHint="search"
           aria-label="Nombre de la ciudad"
           role="combobox"
-          aria-autocomplete="list"
+          aria-autocomplete={sinConexion ? 'none' : 'list'}
+          aria-describedby={sinConexion ? idAyuda : undefined}
           aria-expanded={abierto}
           aria-controls={idLista}
           aria-activedescendant={abierto && activo >= 0 ? idOpcion(activo) : undefined}
@@ -194,6 +207,12 @@ export default function SearchBar({ valor, cargando, onCambio, onBuscar, onElegi
           </p>
         )}
       </div>
+
+      {sinConexion && (
+        <p id={idAyuda} className="mt-2 px-4 text-center text-[0.8rem] text-suave">
+          Sin conexión no hay sugerencias. Podés buscar por nombre las ciudades que ya consultaste.
+        </p>
+      )}
 
       {/* Estado para lectores de pantalla */}
       <p className="sr-only" role="status" aria-live="polite">

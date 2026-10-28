@@ -1,25 +1,27 @@
-import { useEffect, useState } from 'react';
-import { IconoAlerta, IconoCerrar, IconoReintentar } from './Icons';
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
+import { IconoAlerta, IconoCerrar } from './Icons';
 
 interface Props {
   mensaje: string;
-  /** Si viene, se muestra "Reintentar" (errores de red o 503) */
-  onReintentar?: () => void;
+  /** Botón opcional: "Reintentar" (red o 503), "Ver último clima" (sin conexión)… */
+  accion?: { etiqueta: string; alHacer: () => void; Icono?: ComponentType<SVGProps<SVGSVGElement>> };
   onCerrar: () => void;
 }
 
 /**
- * Toast de error arriba de la pantalla. Se cierra solo (4 s, u 8 s si se puede reintentar),
+ * Toast de error arriba de la pantalla. Se cierra solo (4 s, u 8 s si tiene una acción),
  * pero no mientras el puntero o el foco están encima. Usar con key para reiniciar el timer.
  */
-export default function ErrorToast({ mensaje, onReintentar, onCerrar }: Props) {
+export default function ErrorToast({ mensaje, accion, onCerrar }: Props) {
   const [pausado, setPausado] = useState(false);
+  // Solo importa si hay acción (el objeto cambia en cada render del padre)
+  const conAccion = accion !== undefined;
 
   useEffect(() => {
     if (pausado) return;
-    const timeout = setTimeout(onCerrar, onReintentar ? 8000 : 4000);
+    const timeout = setTimeout(onCerrar, conAccion ? 8000 : 4000);
     return () => clearTimeout(timeout);
-  }, [pausado, onCerrar, onReintentar]);
+  }, [pausado, onCerrar, conAccion]);
 
   return (
     <div
@@ -32,14 +34,14 @@ export default function ErrorToast({ mensaje, onReintentar, onCerrar }: Props) {
     >
       <IconoAlerta className="h-6 w-6 shrink-0 text-[#ff9b9b]" />
       <p className="flex-1 py-2 text-[0.95rem] leading-snug">{mensaje}</p>
-      {onReintentar && (
+      {accion && (
         <button
           type="button"
-          onClick={onReintentar}
+          onClick={accion.alHacer}
           className="inline-flex h-tactil shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[0.9rem] font-medium transition-colors hover:bg-white/25 active:bg-white/30"
         >
-          <IconoReintentar className="h-4 w-4" />
-          Reintentar
+          {accion.Icono && <accion.Icono className="h-4 w-4" />}
+          {accion.etiqueta}
         </button>
       )}
       <button

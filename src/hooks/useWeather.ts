@@ -43,7 +43,8 @@ export function useWeather({ onExito, onError }: Opciones) {
   // Al desmontar, cancelamos lo que quede en vuelo
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const buscar = useCallback(async (query: WeatherQuery) => {
+  /** forzar: ignora la caché en memoria (por ejemplo, para actualizar al volver la conexión) */
+  const buscar = useCallback(async (query: WeatherQuery, forzar = false) => {
     // Cancelar petición anterior si aún está en vuelo
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -56,7 +57,7 @@ export function useWeather({ onExito, onError }: Opciones) {
       callbacks.current.onExito(resultado, query);
     };
 
-    const cached = leerCache(query);
+    const cached = forzar ? null : leerCache(query);
     if (cached) return exito(cached);
 
     setCargando(true);
@@ -74,7 +75,17 @@ export function useWeather({ onExito, onError }: Opciones) {
   }, []);
 
   const buscarCiudad = useCallback((ciudad: string) => buscar({ city: ciudad }), [buscar]);
-  const buscarCoordenadas = useCallback((lat: number, lon: number) => buscar({ lat, lon }), [buscar]);
+  const buscarCoordenadas = useCallback(
+    (lat: number, lon: number, forzar = false) => buscar({ lat, lon }, forzar),
+    [buscar],
+  );
+
+  /** Muestra datos que no vienen de una búsqueda (el último clima guardado, sin conexión) */
+  const mostrar = useCallback((guardado: WeatherData) => {
+    abortRef.current?.abort();
+    setCargando(false);
+    setData(guardado);
+  }, []);
 
   const buscarUbicacion = useCallback(() => {
     if (!navigator.geolocation) {
@@ -99,5 +110,5 @@ export function useWeather({ onExito, onError }: Opciones) {
     if (ultimaConsulta.current) void buscar(ultimaConsulta.current);
   }, [buscar]);
 
-  return { data, cargando, buscarCiudad, buscarCoordenadas, buscarUbicacion, reintentar };
+  return { data, cargando, buscarCiudad, buscarCoordenadas, buscarUbicacion, reintentar, mostrar };
 }

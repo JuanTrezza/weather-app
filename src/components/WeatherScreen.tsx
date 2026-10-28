@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Unit } from '../hooks/useUnit';
 import type { WeatherData } from '../types/weather';
 import { resumenDiario, tipoCielo } from '../utils/weather';
@@ -15,9 +15,11 @@ interface Props {
   nombre: string;
   unit: Unit;
   onVolver: () => void;
+  /** Aviso de conexión (sin conexión / reconectado), debajo de los controles del header */
+  aviso?: ReactNode;
 }
 
-export default function WeatherScreen({ data, nombre, unit, onVolver }: Props) {
+export default function WeatherScreen({ data, nombre, unit, onVolver, aviso }: Props) {
   const { current, forecast } = data;
   const tituloRef = useRef<HTMLHeadingElement>(null);
   const [compacto, setCompacto] = useState(false);
@@ -70,6 +72,7 @@ export default function WeatherScreen({ data, nombre, unit, onVolver }: Props) {
           </p>
           <UnitToggle unit={unit} />
         </div>
+        {aviso && <div className="pb-2">{aviso}</div>}
       </header>
 
       <div className="px-seguro mt-2">

@@ -108,6 +108,13 @@ npm run build    # genera dist/
 
 En desarrollo la app llama al Worker local (`http://127.0.0.1:8787`): corré `npx wrangler dev` dentro de `worker/` (ver más abajo). Cada push a `main` despliega en GitHub Pages con GitHub Actions.
 
+## 📲 App instalable (PWA)
+
+- Se puede instalar desde Chrome, Edge y Android (botón "Instalar app") o en iOS con Compartir → Agregar a inicio.
+- Funciona sin conexión: el shell y las texturas del globo quedan en caché, las consultas de clima se guardan una hora y siempre se puede ver el último clima consultado.
+- El service worker solo existe en el build: para probarlo, `npm run build` y `npm run preview -- --port 5173` (el puerto 5173 es un origen permitido por el Worker de producción).
+- Los íconos de `public/` salen de `public/icon.svg` y `src/assets/icons/icon-maskable.svg` (versión a sangre, con el contenido dentro de la zona segura).
+
 ## 🔑 API
 
 La aplicación utiliza la API gratuita de **OpenWeatherMap** para datos meteorológicos y las texturas del globo provienen de los ejemplos oficiales de **Three.js** (NASA Earth textures).

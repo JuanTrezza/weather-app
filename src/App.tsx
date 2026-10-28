@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ConnectionBanner from './components/ConnectionBanner';
 import ErrorToast from './components/ErrorToast';
 import Globe, { type GloboHandle } from './components/Globe';
 import History from './components/History';
+import { IconoReintentar, IconoReloj } from './components/Icons';
+import InstallPrompt from './components/InstallPrompt';
 import Loading from './components/Loading';
 import SearchBar from './components/SearchBar';
 import Stars from './components/Stars';
+import UpdateToast from './components/UpdateToast';
 import WeatherScreen from './components/WeatherScreen';
 import { tieneCoordenadas, useHistory, type CiudadGuardada } from './hooks/useHistory';
+import { useOnline } from './hooks/useOnline';
 import { useUnit } from './hooks/useUnit';
 import { useWeather, type ErrorClima } from './hooks/useWeather';
+import { guardarUltimo, horaConsulta, leerUltimo, type ClimaGuardado } from './services/lastWeather';
 import type { GeocodeResult, WeatherData, WeatherQuery } from './types/weather';
 import { nombreCiudad } from './utils/places';
 import { PALETA_INICIO, faseDelDia, paletaPara } from './utils/theme';
@@ -20,13 +26,22 @@ export default function App() {
   const [pantalla, setPantalla] = useState<Pantalla>('busqueda');
   const [ciudad, setCiudad] = useState('');
   // id distinto en cada error, para reiniciar el timer aunque el mensaje se repita
-  const [error, setError] = useState<(ErrorClima & { id: number }) | null>(null);
+  // sinConexion: falló por estar offline sin datos en caché (se ofrece el último clima guardado)
+  const [error, setError] = useState<(ErrorClima & { id: number; sinConexion: boolean }) | null>(null);
   // Mientras el globo gira hacia la ciudad encontrada (antes de mostrar el resultado)
   const [girando, setGirando] = useState(false);
   const [anuncio, setAnuncio] = useState('');
   // Nombre que se muestra: el elegido (sugerencia, historial) o, si se buscó por texto, el de la API
   const [nombreVisible, setNombreVisible] = useState('');
   const { historial, agregar } = useHistory();
+  const online = useOnline();
+  // Último clima consultado con éxito (localStorage), para usarlo sin conexión
+  const [ultimo, setUltimo] = useState<ClimaGuardado | null>(leerUltimo);
+  // Cuándo se consultaron los datos que se están mostrando
+  const [consultadoEn, setConsultadoEn] = useState<number | null>(null);
+  // Volvió la conexión después de estar offline: se ofrece actualizar
+  const [reconectado, setReconectado] = useState(false);
+  const estabaOffline = useRef(!navigator.onLine);
   const unit = useUnit();
   const { reiniciar: reiniciarUnidad } = unit;
 
@@ -39,7 +54,14 @@ export default function App() {
 
   const mostrarError = useCallback((e: ErrorClima) => {
     setAnuncio('');
-    setError({ ...e, id: Date.now() });
+    // Sin conexión y sin respuesta en la caché del service worker
+    const sinConexion = !navigator.onLine && e.reintentable;
+    setError({
+      ...e,
+      ...(sinConexion && { mensaje: 'Sin conexión, y no hay datos guardados para esa búsqueda.' }),
+      sinConexion,
+      id: Date.now(),
+    });
   }, []);
   const cerrarError = useCallback(() => setError(null), []);
 
@@ -50,6 +72,12 @@ export default function App() {
       nombreElegido.current = null;
       reiniciarUnidad();
       setNombreVisible(nombre);
+      // Sin conexión, la respuesta vino de la caché del service worker: la hora real es la de la medición
+      const fecha = navigator.onLine ? Date.now() : data.current.dt * 1000;
+      setConsultadoEn(fecha);
+      const guardado = { ...data, nombre, fecha };
+      guardarUltimo(guardado);
+      setUltimo(guardado);
       // Se guardan las coordenadas pedidas (si se buscó por lat/lon), así tocar el historial pega en la caché
       const { lat, lon } = 'lat' in query ? query : data.current.coord;
       agregar({ nombre, pais: data.current.sys.country, lat, lon });
@@ -65,7 +93,7 @@ export default function App() {
     [reiniciarUnidad, agregar],
   );
 
-  const { data, cargando, buscarCiudad, buscarCoordenadas, buscarUbicacion, reintentar } = useWeather({
+  const { data, cargando, buscarCiudad, buscarCoordenadas, buscarUbicacion, reintentar, mostrar } = useWeather({
     onExito,
     onError: mostrarError,
   });
@@ -90,6 +118,24 @@ export default function App() {
     // Solo al cambiar de ciudad, no al cambiar de unidad
   }, [current, nombreVisible]);
 
+  // online/offline: al reconectarse después de un corte, se ofrece actualizar
+  useEffect(() => {
+    if (!online) {
+      estabaOffline.current = true;
+      setReconectado(false);
+    } else if (estabaOffline.current) {
+      estabaOffline.current = false;
+      setReconectado(true);
+    }
+  }, [online]);
+
+  // El aviso de reconexión se va solo a los 10 s
+  useEffect(() => {
+    if (!reconectado) return;
+    const timeout = setTimeout(() => setReconectado(false), 10_000);
+    return () => clearTimeout(timeout);
+  }, [reconectado]);
+
   const empezarBusqueda = () => {
     busquedaId.current++;
     nombreElegido.current = null;
@@ -109,10 +155,28 @@ export default function App() {
   };
 
   // Sugerencia del autocompletado o ciudad guardada: por lat/lon, para no confundir homónimas
-  const buscarLugar = (nombre: string, lat: number, lon: number) => {
+  const buscarLugar = (nombre: string, lat: number, lon: number, forzar = false) => {
     empezarBusqueda();
     nombreElegido.current = nombre;
-    void buscarCoordenadas(lat, lon);
+    void buscarCoordenadas(lat, lon, forzar);
+  };
+
+  // Sin conexión: muestra el último clima guardado
+  const verUltimo = () => {
+    if (!ultimo) return;
+    empezarBusqueda();
+    mostrar(ultimo);
+    reiniciarUnidad();
+    setNombreVisible(ultimo.nombre);
+    setConsultadoEn(ultimo.fecha);
+    window.scrollTo(0, 0);
+    setPantalla('clima');
+  };
+
+  // Volvió la conexión: vuelve a pedir la ciudad que se está viendo (sin la caché en memoria)
+  const actualizar = () => {
+    if (data) buscarLugar(nombreVisible, data.current.coord.lat, data.current.coord.lon, true);
+    setReconectado(false);
   };
 
   const elegirLugar = (lugar: GeocodeResult) => buscarLugar(nombreCiudad(lugar), lugar.lat, lugar.lon);
@@ -137,6 +201,36 @@ export default function App() {
 
   const ocupado = cargando || girando;
 
+  // Aviso de conexión de cada pantalla
+  const enClima = pantalla === 'clima' && data !== null;
+  let avisoConexion = null;
+  if (!online && enClima && consultadoEn !== null) {
+    avisoConexion = (
+      <ConnectionBanner estado="offline" texto={`Sin conexión · Mostrando datos de las ${horaConsulta(consultadoEn)}`} />
+    );
+  } else if (!online) {
+    avisoConexion = (
+      <ConnectionBanner
+        estado="offline"
+        texto={ultimo ? 'Sin conexión' : 'Sin conexión · Las ciudades que ya consultaste siguen disponibles'}
+        accion={
+          ultimo
+            ? { etiqueta: `Ver último clima: ${ultimo.nombre} (${horaConsulta(ultimo.fecha)})`, alHacer: verUltimo }
+            : undefined
+        }
+      />
+    );
+  } else if (reconectado) {
+    avisoConexion = (
+      <ConnectionBanner
+        estado="reconectado"
+        texto="Volviste a tener conexión"
+        accion={enClima ? { etiqueta: 'Actualizar', alHacer: actualizar, ocupado: cargando } : undefined}
+        onCerrar={() => setReconectado(false)}
+      />
+    );
+  }
+
   return (
     <>
       <Stars />
@@ -149,6 +243,7 @@ export default function App() {
           aria-labelledby="titulo-app"
           aria-busy={ocupado}
         >
+          {pantalla === 'busqueda' && avisoConexion}
           <div className="flex w-full flex-1 flex-col items-center justify-center gap-6 py-6 md:gap-8">
             <header className="text-center">
               <h1
@@ -174,16 +269,20 @@ export default function App() {
                     onBuscar={buscar}
                     onElegirLugar={elegirLugar}
                     onUbicacion={ubicar}
+                    sinConexion={!online}
                     inputRef={inputRef}
                   />
                   <History ciudades={historial} onElegir={elegirGuardada} />
+                  <InstallPrompt />
                 </>
               )}
             </div>
           </div>
         </section>
 
-        {pantalla === 'clima' && data && <WeatherScreen data={data} nombre={nombreVisible} unit={unit} onVolver={volver} />}
+        {pantalla === 'clima' && data && (
+          <WeatherScreen data={data} nombre={nombreVisible} unit={unit} onVolver={volver} aviso={avisoConexion} />
+        )}
       </main>
 
       {/* Región viva para lectores de pantalla: estado de la búsqueda y resultado */}
@@ -196,19 +295,27 @@ export default function App() {
           key={error.id}
           mensaje={error.mensaje}
           onCerrar={cerrarError}
-          onReintentar={
-            error.reintentable
-              ? () => {
-                  // Reintentar conserva el nombre elegido de la búsqueda que falló
-                  const nombre = nombreElegido.current;
-                  empezarBusqueda();
-                  nombreElegido.current = nombre;
-                  reintentar();
-                }
-              : undefined
+          accion={
+            error.sinConexion && ultimo
+              ? { etiqueta: 'Ver último clima', alHacer: verUltimo, Icono: IconoReloj }
+              : error.reintentable && !error.sinConexion
+                ? {
+                    etiqueta: 'Reintentar',
+                    Icono: IconoReintentar,
+                    alHacer: () => {
+                      // Reintentar conserva el nombre elegido de la búsqueda que falló
+                      const nombre = nombreElegido.current;
+                      empezarBusqueda();
+                      nombreElegido.current = nombre;
+                      reintentar();
+                    },
+                  }
+                : undefined
           }
         />
       )}
+
+      <UpdateToast />
     </>
   );
 }

@@ -160,3 +160,33 @@ export const IconoBrujula = (p: Props) => (
     <path d="M15.5 8.5l-2 5-5 2 2-5z" />
   </Linea>
 );
+
+export const IconoInstalar = (p: Props) => (
+  <Linea {...p}>
+    <path d="M12 3.5v11M7.5 10.5 12 15l4.5-4.5" />
+    <path d="M4.5 16v2.5A2 2 0 0 0 6.5 20.5h11a2 2 0 0 0 2-2V16" />
+  </Linea>
+);
+
+/** Ícono de "Compartir" de Safari en iOS */
+export const IconoCompartir = (p: Props) => (
+  <Linea {...p}>
+    <path d="M12 3.5v11M8.5 7 12 3.5 15.5 7" />
+    <path d="M8 10.5H6.5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H16" />
+  </Linea>
+);
+
+export const IconoSinConexion = (p: Props) => (
+  <Linea {...p}>
+    <path d="M3 3l18 18" />
+    <path d="M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M19 13a10 10 0 0 0-2.3-1.6M2 9.5a15 15 0 0 1 4.3-2.7M22 9.5A15 15 0 0 0 11 5.6" />
+    <path d="M12 20v.01" />
+  </Linea>
+);
+
+export const IconoConexion = (p: Props) => (
+  <Linea {...p}>
+    <path d="M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 14 0M2 9.5a15 15 0 0 1 20 0" />
+    <path d="M12 20v.01" />
+  </Linea>
+);
